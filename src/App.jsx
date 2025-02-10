@@ -1,7 +1,11 @@
+import Chat from "./chat/ChatRooms";
+
 function App() {
   return (
     <>
-      <div>Test</div>
+     <div className="min-h-screen bg-gray-200 flex justify-center items-center">
+      <Chat />
+    </div>
     </>
   );
 }
