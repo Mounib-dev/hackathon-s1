@@ -1,20 +1,23 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-
-import Navbar from "./components/layout/Navbar";
-import FormBesoin from "./components/Accueil/FormBesoin";
+import { AuthProvider } from "./context/AuthContext";
+import Login from "./components/auth/Login";
+import RegistrationForm from "./components/auth/Register";
+import Home from "./components/Home";
+import PrivateRoute from "./components/auth/PrivateRoute";
 
 function App() {
   return (
-    <>
-
-      <Navbar />
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
-          <Route path="/" element={<FormBesoin />}></Route>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<RegistrationForm />} />
+          <Route element={<PrivateRoute />}>
+            <Route path="/home" element={<Home />} />
+          </Route>
         </Routes>
-      </Router>
-
-    </>
+      </AuthProvider>
+    </Router>
   );
 }
 
