@@ -1,11 +1,27 @@
 import Chat from "./chat/ChatRooms";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import Login from "./components/auth/Login";
+import RegistrationForm from "./components/auth/Register";
+import PrivateRoute from "./components/auth/PrivateRoute";
+import FormBesoin from "./components/FormBesoin";
+import Navbar from "./components/layout/Navbar";
 
 function App() {
   return (
     <>
-     <div className="min-h-screen bg-gray-200 flex justify-center items-center">
-      <Chat />
-    </div>
+      <Navbar />
+      <Router>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<RegistrationForm />} />
+            <Route element={<PrivateRoute />}>
+              <Route path="/" element={<FormBesoin />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </Router>
     </>
   );
 }
