@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import api from "../../axiosConfig";
 
 const chatRooms = [
   { id: "general", name: "💬 Discussion Générale" },
@@ -13,24 +14,46 @@ export default function ChatRooms() {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState(null);
-  const [user, setUser] = useState({ 
-    firstName: "Utilisateur", 
-    lastName: "", 
-    avatar: "https://content.imageresizer.com/images/memes/Chill-guy-meme-9au02y.jpg"  
+  const [user, setUser] = useState({
+    firstName: "",
+    lastName: "",
+    avatar: "https://cdn-www.konbini.com/files/2024/11/Chill-guy.jpg?width=3840&quality=75&format=webp",
   });
 
   useEffect(() => {
-    setMessages([]); 
+    const fetchUserInfo = async () => {
+
+      const userInfoEndpoint = "/user/info"
+      try {
+        const response = await api.get(import.meta.env.VITE_API_BASE_URL + userInfoEndpoint);
+        const { firstName, lastName } = response.data.user;
+        setUser((prevUser) => ({
+          ...prevUser,
+          firstName: firstName,
+          lastName: lastName,
+        }));
+
+      } catch (error) {
+        console.error("❌ Erreur lors de la récupération des infos utilisateur:", error);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
+
+  useEffect(() => {
+    setMessages([]);
   }, [currentRoom]);
 
   const sendMessage = () => {
     if (message.trim() || file) {
-      const newMessage = { 
-        username: `${user.firstName} ${user.lastName}`.trim() || "Anonyme", 
-        avatar: user.avatar, 
-        message, 
-        room: currentRoom, 
-        file: null 
+      const newMessage = {
+        username: `${user.firstName} ${user.lastName}`.trim() || "Anonyme",
+        avatar: user.avatar,
+        message,
+        room: currentRoom,
+        file: null,
       };
 
       if (file) {
@@ -39,12 +62,13 @@ export default function ChatRooms() {
       }
 
       setMessages((prev) => [...prev, newMessage]);
-      setMessage(""); 
-      setFile(null); 
+      setMessage("");
+      setFile(null);
     }
   };
 
   return (
+    
     <div className="flex h-screen">
       <div className="w-1/4 bg-gray-900 text-white p-4">
         <h2 className="text-xl font-bold mb-4">💬 Salons de discussion</h2>
@@ -73,7 +97,7 @@ export default function ChatRooms() {
               <div key={index} className="mb-3 flex items-center space-x-3">
                 <img src={msg.avatar} alt="Avatar" className="w-10 h-10 rounded-full border shadow" />
                 <div>
-                  <span className="font-semibold text-dark-600">{msg.username}:</span>
+                  <span className="font-semibold text-blue-600">{msg.username}:</span>
                   <span className="ml-2 text-gray-700">{msg.message}</span>
                   {msg.file && (
                     <div className="mt-2">
