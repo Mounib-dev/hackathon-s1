@@ -13,7 +13,11 @@ export default function ChatRooms() {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState(null);
-  const [user, setUser] = useState({ firstName: "Utilisateur", lastName: "" });
+  const [user, setUser] = useState({ 
+    firstName: "Utilisateur", 
+    lastName: "", 
+    avatar: "https://content.imageresizer.com/images/memes/Chill-guy-meme-9au02y.jpg"  
+  });
 
   useEffect(() => {
     setMessages([]); 
@@ -23,6 +27,7 @@ export default function ChatRooms() {
     if (message.trim() || file) {
       const newMessage = { 
         username: `${user.firstName} ${user.lastName}`.trim() || "Anonyme", 
+        avatar: user.avatar, 
         message, 
         room: currentRoom, 
         file: null 
@@ -65,20 +70,23 @@ export default function ChatRooms() {
         <div className="flex-1 overflow-y-auto border rounded-lg p-4 bg-gray-100">
           {messages.length > 0 ? (
             messages.map((msg, index) => (
-              <div key={index} className="mb-3">
-                <span className="font-semibold text-blue-600">{msg.username}:</span>
-                <span className="ml-2 text-gray-700">{msg.message}</span>
-                {msg.file && (
-                  <div className="mt-2">
-                    {msg.file.type.startsWith("image/") ? (
-                      <img src={msg.file.url} alt="shared" className="w-32 h-32 object-cover rounded-lg shadow" />
-                    ) : (
-                      <a href={msg.file.url} download className="text-blue-500 underline">
-                        Télécharger le fichier
-                      </a>
-                    )}
-                  </div>
-                )}
+              <div key={index} className="mb-3 flex items-center space-x-3">
+                <img src={msg.avatar} alt="Avatar" className="w-10 h-10 rounded-full border shadow" />
+                <div>
+                  <span className="font-semibold text-dark-600">{msg.username}:</span>
+                  <span className="ml-2 text-gray-700">{msg.message}</span>
+                  {msg.file && (
+                    <div className="mt-2">
+                      {msg.file.type.startsWith("image/") ? (
+                        <img src={msg.file.url} alt="shared" className="w-32 h-32 object-cover rounded-lg shadow" />
+                      ) : (
+                        <a href={msg.file.url} download className="text-blue-500 underline">
+                          Télécharger le fichier
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             ))
           ) : (
