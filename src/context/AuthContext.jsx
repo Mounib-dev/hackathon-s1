@@ -40,7 +40,7 @@ const AuthProvider = ({ children }) => {
         // fetchUserData(data.token);
         console.log(response.data.user);
         setUser(response.data.user); // Set user data if available
-        navigate("/home");
+        navigate("/");
       } else {
         throw new Error(response.data.message || "Login failed");
       }
@@ -49,6 +49,21 @@ const AuthProvider = ({ children }) => {
       throw error;
     }
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    const requestInterceptor = axios.interceptors.request.use((config) => {
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+    };
+  }, []);
 
   const logout = () => {
     localStorage.removeItem("token");
