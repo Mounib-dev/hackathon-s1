@@ -8,26 +8,22 @@ import FormBesoin from "./components/FormBesoin";
 import Navbar from "./components/layout/Navbar";
 import ChatMiseEnRelation from "./components/chat/ChatMiseEnRelation";
 
-import { NotificationProvider } from "./context/NotitificationContext";
-
 function App() {
   return (
     <>
       <Router>
-        <NotificationProvider>
-          <AuthProvider>
-            <Navbar />
+        <AuthProvider>
+          <Navbar />
 
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<RegistrationForm />} />
-              <Route element={<PrivateRoute />}>
-                <Route path="/" element={<FormBesoin />} />
-                <Route path="/chat" element={<ChatRooms />} />
-              </Route>
-            </Routes>
-          </AuthProvider>
-        </NotificationProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<RegistrationForm />} />
+            <Route element={<PrivateRoute />}>
+              <Route path="/" element={<FormBesoin />} />
+              <Route path="/chat" element={<ChatRooms />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
       </Router>
     </>
   );
