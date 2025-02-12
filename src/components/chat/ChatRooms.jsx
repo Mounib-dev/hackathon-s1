@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import api from "../../axiosConfig";
 
+import { io } from "socket.io-client";
+
 const chatRooms = [
   { id: "general", name: "💬 Discussion Générale" },
   { id: "urgence", name: "🚨 Urgences" },
@@ -17,38 +19,54 @@ export default function ChatRooms() {
   const [user, setUser] = useState({
     firstName: "",
     lastName: "",
-    avatar: "https://cdn-www.konbini.com/files/2024/11/Chill-guy.jpg?width=3840&quality=75&format=webp",
+    avatar:
+      "https://cdn-www.konbini.com/files/2024/11/Chill-guy.jpg?width=3840&quality=75&format=webp",
   });
+
+  const socket = io("http://localhost:3000");
+
+  useEffect(() => {
+    // Listen for incoming messages
+    socket.on("receiveMessage", (newMessage) => {
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    });
+
+    // Cleanup listener on unmount
+    return () => socket.off("receiveMessage");
+  }, []);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
-
-      const userInfoEndpoint = "/user/info"
+      const userInfoEndpoint = "/user/info";
       try {
-        const response = await api.get(import.meta.env.VITE_API_BASE_URL + userInfoEndpoint);
+        const response = await api.get(
+          import.meta.env.VITE_API_BASE_URL + userInfoEndpoint,
+        );
         const { firstName, lastName } = response.data.user;
         setUser((prevUser) => ({
           ...prevUser,
           firstName: firstName,
           lastName: lastName,
         }));
-
       } catch (error) {
-        console.error("❌ Erreur lors de la récupération des infos utilisateur:", error);
+        console.error(
+          "❌ Erreur lors de la récupération des infos utilisateur:",
+          error,
+        );
       }
     };
 
     fetchUserInfo();
   }, []);
 
-
   useEffect(() => {
     setMessages([]);
   }, [currentRoom]);
 
   const sendMessage = () => {
+    let newMessage = {};
     if (message.trim() || file) {
-      const newMessage = {
+      newMessage = {
         username: `${user.firstName} ${user.lastName}`.trim() || "Anonyme",
         avatar: user.avatar,
         message,
@@ -61,22 +79,22 @@ export default function ChatRooms() {
         newMessage.file = { name: file.name, url: fileUrl, type: file.type };
       }
 
-      setMessages((prev) => [...prev, newMessage]);
+      // setMessages((prev) => [...prev, newMessage]);
+      socket.emit("sendMessage", newMessage);
       setMessage("");
       setFile(null);
     }
   };
 
   return (
-    
     <div className="flex h-screen">
-      <div className="w-1/4 bg-gray-900 text-white p-4">
-        <h2 className="text-xl font-bold mb-4">💬 Salons de discussion</h2>
+      <div className="w-1/4 bg-gray-900 p-4 text-white">
+        <h2 className="mb-4 text-xl font-bold">💬 Salons de discussion</h2>
         <ul className="space-y-2">
           {chatRooms.map((room) => (
             <li
               key={room.id}
-              className={`p-3 rounded-lg cursor-pointer transition ${
+              className={`cursor-pointer rounded-lg p-3 transition ${
                 currentRoom === room.id ? "bg-pink-600" : "hover:bg-gray-700"
               }`}
               onClick={() => setCurrentRoom(room.id)}
@@ -87,24 +105,38 @@ export default function ChatRooms() {
         </ul>
       </div>
 
-      <div className="w-3/4 p-6 flex flex-col">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+      <div className="flex w-3/4 flex-col p-6">
+        <h2 className="mb-4 text-2xl font-bold text-gray-800">
           {chatRooms.find((r) => r.id === currentRoom)?.name}
         </h2>
-        <div className="flex-1 overflow-y-auto border rounded-lg p-4 bg-gray-100">
+        <div className="flex-1 overflow-y-auto rounded-lg border bg-gray-100 p-4">
           {messages.length > 0 ? (
             messages.map((msg, index) => (
               <div key={index} className="mb-3 flex items-center space-x-3">
-                <img src={msg.avatar} alt="Avatar" className="w-10 h-10 rounded-full border shadow" />
+                <img
+                  src={msg.avatar}
+                  alt="Avatar"
+                  className="h-10 w-10 rounded-full border shadow"
+                />
                 <div>
-                  <span className="font-semibold text-blue-600">{msg.username}:</span>
+                  <span className="font-semibold text-blue-600">
+                    {msg.username}:
+                  </span>
                   <span className="ml-2 text-gray-700">{msg.message}</span>
                   {msg.file && (
                     <div className="mt-2">
                       {msg.file.type.startsWith("image/") ? (
-                        <img src={msg.file.url} alt="shared" className="w-32 h-32 object-cover rounded-lg shadow" />
+                        <img
+                          src={msg.file.url}
+                          alt="shared"
+                          className="h-32 w-32 rounded-lg object-cover shadow"
+                        />
                       ) : (
-                        <a href={msg.file.url} download className="text-blue-500 underline">
+                        <a
+                          href={msg.file.url}
+                          download
+                          className="text-blue-500 underline"
+                        >
                           Télécharger le fichier
                         </a>
                       )}
@@ -114,24 +146,37 @@ export default function ChatRooms() {
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500">Aucun message pour l’instant...</p>
+            <p className="text-center text-gray-500">
+              Aucun message pour l’instant...
+            </p>
           )}
         </div>
 
-        <div className="flex mt-4 space-x-2">
+        <div className="mt-4 flex space-x-2">
           <input
             type="text"
-            className="flex-1 border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+            className="flex-1 rounded-lg border p-3 focus:ring-2 focus:ring-pink-400 focus:outline-none"
             placeholder="Écrire un message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
-          <input type="file" className="hidden" id="fileInput" onChange={(e) => setFile(e.target.files[0])} />
-          <label htmlFor="fileInput" className="bg-gray-300 text-gray-700 px-4 py-3 rounded-lg cursor-pointer">
+          <input
+            type="file"
+            className="hidden"
+            id="fileInput"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+          <label
+            htmlFor="fileInput"
+            className="cursor-pointer rounded-lg bg-gray-300 px-4 py-3 text-gray-700"
+          >
             📎
           </label>
-          <button className="bg-pink-600 text-white px-6 py-3 rounded-lg" onClick={sendMessage}>
+          <button
+            className="rounded-lg bg-pink-600 px-6 py-3 text-white"
+            onClick={sendMessage}
+          >
             Envoyer
           </button>
         </div>
