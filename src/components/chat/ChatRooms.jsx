@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import api from "../../axiosConfig";
-
 import { io } from "socket.io-client";
+import dayjs from "dayjs"; 
+import relativeTime from "dayjs/plugin/relativeTime";
+import calendar from "dayjs/plugin/calendar";
+import "dayjs/locale/fr";
+
+dayjs.extend(relativeTime);
+dayjs.extend(calendar);
+dayjs.locale("fr");
 
 const chatRooms = [
   { id: "general", name: "💬 Discussion Générale" },
@@ -26,22 +33,17 @@ export default function ChatRooms() {
   const socket = io("http://localhost:3000");
 
   useEffect(() => {
-    // Listen for incoming messages
     socket.on("receiveMessage", (newMessage) => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
     });
 
-    // Cleanup listener on unmount
     return () => socket.off("receiveMessage");
   }, []);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
-      const userInfoEndpoint = "/user/info";
       try {
-        const response = await api.get(
-          import.meta.env.VITE_API_BASE_URL + userInfoEndpoint,
-        );
+        const response = await api.get(import.meta.env.VITE_API_BASE_URL + "/user/info");
         const { firstName, lastName } = response.data.user;
         setUser((prevUser) => ({
           ...prevUser,
@@ -49,10 +51,7 @@ export default function ChatRooms() {
           lastName: lastName,
         }));
       } catch (error) {
-        console.error(
-          "❌ Erreur lors de la récupération des infos utilisateur:",
-          error,
-        );
+        console.error("❌ Erreur lors de la récupération des infos utilisateur:", error);
       }
     };
 
@@ -64,22 +63,16 @@ export default function ChatRooms() {
   }, [currentRoom]);
 
   const sendMessage = () => {
-    let newMessage = {};
     if (message.trim() || file) {
-      newMessage = {
+      const newMessage = {
         username: `${user.firstName} ${user.lastName}`.trim() || "Anonyme",
         avatar: user.avatar,
         message,
         room: currentRoom,
-        file: null,
+        file: file ? { name: file.name, url: URL.createObjectURL(file), type: file.type } : null,
+        timestamp: new Date().toISOString(), 
       };
 
-      if (file) {
-        const fileUrl = URL.createObjectURL(file);
-        newMessage.file = { name: file.name, url: fileUrl, type: file.type };
-      }
-
-      // setMessages((prev) => [...prev, newMessage]);
       socket.emit("sendMessage", newMessage);
       setMessage("");
       setFile(null);
@@ -112,17 +105,26 @@ export default function ChatRooms() {
         <div className="flex-1 overflow-y-auto rounded-lg border bg-gray-100 p-4">
           {messages.length > 0 ? (
             messages.map((msg, index) => (
-              <div key={index} className="mb-3 flex items-center space-x-3">
+              <div key={index} className="mb-3 flex space-x-3">
                 <img
                   src={msg.avatar}
                   alt="Avatar"
                   className="h-10 w-10 rounded-full border shadow"
                 />
                 <div>
-                  <span className="font-semibold text-blue-600">
-                    {msg.username}:
-                  </span>
-                  <span className="ml-2 text-gray-700">{msg.message}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-semibold text-blue-600">{msg.username}</span>
+                    <span className="text-xs text-gray-500">
+                    {dayjs(msg.timestamp).calendar(null, { 
+                        sameDay: "[Aujourd’hui à] HH:mm",
+                        lastDay: "[Hier à] HH:mm",
+                        lastWeek: "dddd [à] HH:mm",
+                        sameElse: "DD/MM/YYYY [à] HH:mm",
+                      })}
+
+                    </span>
+                  </div>
+                  <span className="text-gray-700">{msg.message}</span>
                   {msg.file && (
                     <div className="mt-2">
                       {msg.file.type.startsWith("image/") ? (
@@ -132,12 +134,8 @@ export default function ChatRooms() {
                           className="h-32 w-32 rounded-lg object-cover shadow"
                         />
                       ) : (
-                        <a
-                          href={msg.file.url}
-                          download
-                          className="text-blue-500 underline"
-                        >
-                          Télécharger le fichier
+                        <a href={msg.file.url} download className="text-blue-500 underline">
+                          📎 {msg.file.name}
                         </a>
                       )}
                     </div>
@@ -146,9 +144,7 @@ export default function ChatRooms() {
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500">
-              Aucun message pour l’instant...
-            </p>
+            <p className="text-center text-gray-500">Aucun message pour l’instant...</p>
           )}
         </div>
 
@@ -161,22 +157,11 @@ export default function ChatRooms() {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
-          <input
-            type="file"
-            className="hidden"
-            id="fileInput"
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-          <label
-            htmlFor="fileInput"
-            className="cursor-pointer rounded-lg bg-gray-300 px-4 py-3 text-gray-700"
-          >
+          <input type="file" className="hidden" id="fileInput" onChange={(e) => setFile(e.target.files[0])} />
+          <label htmlFor="fileInput" className="cursor-pointer rounded-lg bg-gray-300 px-4 py-3 text-gray-700">
             📎
           </label>
-          <button
-            className="rounded-lg bg-pink-600 px-6 py-3 text-white"
-            onClick={sendMessage}
-          >
+          <button className="rounded-lg bg-pink-600 px-6 py-3 text-white" onClick={sendMessage}>
             Envoyer
           </button>
         </div>
