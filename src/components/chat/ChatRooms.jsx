@@ -9,7 +9,8 @@ dayjs.extend(relativeTime);
 dayjs.extend(calendar);
 dayjs.locale("fr");
 
-import { socket } from "../../socketConfig";
+// import { socket } from "../../socketConfig";
+import { io } from "socket.io-client";
 
 const chatRooms = [
   { id: "general", name: "💬 Discussion Générale" },
@@ -31,7 +32,7 @@ export default function ChatRooms() {
       "https://cdn-www.konbini.com/files/2024/11/Chill-guy.jpg?width=3840&quality=75&format=webp",
   });
 
-  // const socket = io("http://localhost:3000");
+  const socket = io("http://localhost:3000");
 
   useEffect(() => {
     const messageHandler = (newMessage) => {
