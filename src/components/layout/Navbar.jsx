@@ -22,8 +22,13 @@ function Navbar() {
         {isLoggedIn ? (
           <>
             <li>
+              <a href="/" className="transition duration-300 hover:text-pink-900">
+                Accueil
+              </a>
+            </li>
+            <li>
               <a
-                href="/"
+                href="/nouvelle-demande"
                 className="transition duration-300 hover:text-pink-900"
               >
                 Demande
@@ -107,6 +112,9 @@ function Navbar() {
             </>
           </li>
         )}
+
+
+
       </ul>
     </nav>
   );
