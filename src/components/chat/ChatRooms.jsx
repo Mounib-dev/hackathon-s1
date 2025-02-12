@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import api from "../../axiosConfig";
-import { io } from "socket.io-client";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import calendar from "dayjs/plugin/calendar";
@@ -9,6 +8,8 @@ import "dayjs/locale/fr";
 dayjs.extend(relativeTime);
 dayjs.extend(calendar);
 dayjs.locale("fr");
+
+import { socket } from "../../socketConfig";
 
 const chatRooms = [
   { id: "general", name: "💬 Discussion Générale" },
@@ -30,33 +31,40 @@ export default function ChatRooms() {
       "https://cdn-www.konbini.com/files/2024/11/Chill-guy.jpg?width=3840&quality=75&format=webp",
   });
 
-  const socket = io("http://localhost:3000");
+  // const socket = io("http://localhost:3000");
 
   useEffect(() => {
     const messageHandler = (newMessage) => {
       setMessages((prevMessages) => {
         const updatedMessages = [...prevMessages, newMessage];
-        localStorage.setItem(`chatMessages_${currentRoom}`, JSON.stringify(updatedMessages));
+        localStorage.setItem(
+          `chatMessages_${currentRoom}`,
+          JSON.stringify(updatedMessages),
+        );
         return updatedMessages;
       });
     };
-  
+
     socket.on("receiveMessage", messageHandler);
-  
+
     return () => {
-      socket.off("receiveMessage", messageHandler); 
+      socket.off("receiveMessage", messageHandler);
     };
   }, [currentRoom, socket]);
-  
 
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await api.get(import.meta.env.VITE_API_BASE_URL + "/user/info");
+        const response = await api.get(
+          import.meta.env.VITE_API_BASE_URL + "/user/info",
+        );
         const { firstName, lastName } = response.data.user;
         setUser((prevUser) => ({ ...prevUser, firstName, lastName }));
       } catch (error) {
-        console.error("❌ Erreur lors de la récupération des infos utilisateur:", error);
+        console.error(
+          "❌ Erreur lors de la récupération des infos utilisateur:",
+          error,
+        );
       }
     };
 
@@ -75,21 +83,27 @@ export default function ChatRooms() {
         avatar: user.avatar,
         message,
         room: currentRoom,
-        file: file ? { name: file.name, url: URL.createObjectURL(file), type: file.type } : null,
+        file: file
+          ? { name: file.name, url: URL.createObjectURL(file), type: file.type }
+          : null,
         timestamp: new Date().toISOString(),
       };
 
       socket.emit("sendMessage", newMessage);
 
       setMessages((prevMessages) => {
-        const isDuplicate = prevMessages.some((msg) => msg.timestamp === newMessage.timestamp);
+        const isDuplicate = prevMessages.some(
+          (msg) => msg.timestamp === newMessage.timestamp,
+        );
         if (isDuplicate) return prevMessages;
-      
+
         const updatedMessages = [...prevMessages, newMessage];
-        localStorage.setItem(`chatMessages_${currentRoom}`, JSON.stringify(updatedMessages));
+        localStorage.setItem(
+          `chatMessages_${currentRoom}`,
+          JSON.stringify(updatedMessages),
+        );
         return updatedMessages;
       });
-      
 
       setMessage("");
       setFile(null);
@@ -130,7 +144,9 @@ export default function ChatRooms() {
                 />
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-blue-600">{msg.username}</span>
+                    <span className="font-semibold text-blue-600">
+                      {msg.username}
+                    </span>
                     <span className="text-xs text-gray-500">
                       {dayjs(msg.timestamp).calendar(null, {
                         sameDay: "[Aujourd’hui à] HH:mm",
@@ -150,7 +166,11 @@ export default function ChatRooms() {
                           className="h-32 w-32 rounded-lg object-cover shadow"
                         />
                       ) : (
-                        <a href={msg.file.url} download className="text-blue-500 underline">
+                        <a
+                          href={msg.file.url}
+                          download
+                          className="text-blue-500 underline"
+                        >
                           📎 {msg.file.name}
                         </a>
                       )}
@@ -160,7 +180,9 @@ export default function ChatRooms() {
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500">Aucun message pour l’instant...</p>
+            <p className="text-center text-gray-500">
+              Aucun message pour l’instant...
+            </p>
           )}
         </div>
 
@@ -173,11 +195,22 @@ export default function ChatRooms() {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
-          <input type="file" className="hidden" id="fileInput" onChange={(e) => setFile(e.target.files[0])} />
-          <label htmlFor="fileInput" className="cursor-pointer rounded-lg bg-gray-300 px-4 py-3 text-gray-700">
+          <input
+            type="file"
+            className="hidden"
+            id="fileInput"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+          <label
+            htmlFor="fileInput"
+            className="cursor-pointer rounded-lg bg-gray-300 px-4 py-3 text-gray-700"
+          >
             📎
           </label>
-          <button className="rounded-lg bg-pink-600 px-6 py-3 text-white" onClick={sendMessage}>
+          <button
+            className="rounded-lg bg-pink-600 px-6 py-3 text-white"
+            onClick={sendMessage}
+          >
             Envoyer
           </button>
         </div>

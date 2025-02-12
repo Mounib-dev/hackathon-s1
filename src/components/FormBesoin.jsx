@@ -1,41 +1,11 @@
 /* eslint-disable react/no-unescaped-entities */
-import { useState, useEffect, useContext } from "react";
-import { io } from "socket.io-client";
-import { NotificationContext } from "../context/NotitificationContext";
+import { useState } from "react";
 
 function FormBesoin() {
-  const { addNotification } = useContext(NotificationContext);
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priorite, setPriorite] = useState("faible");
   const [address, setAddress] = useState("");
-
-  const [socket, setSocket] = useState(null);
-
-  useEffect(() => {
-    const newSocket = io("http://localhost:3000");
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    // Listen for new-alert events
-    socket.on("new-alert", (data) => {
-      console.log("New alert received:", data);
-      // setAlerts(prevAlerts => [...prevAlerts, data.message]);
-      addNotification(data);
-    });
-
-    return () => {
-      socket.off("new-alert");
-    };
-  }, [socket, addNotification]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
