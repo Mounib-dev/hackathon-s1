@@ -23,6 +23,7 @@ function App() {
               <Route path="/register" element={<RegistrationForm />} />
               <Route element={<PrivateRoute />}>
                 <Route path="/" element={<FormBesoin />} />
+                <Route path="/chat" element={<ChatRooms />} />
               </Route>
             </Routes>
           </AuthProvider>
