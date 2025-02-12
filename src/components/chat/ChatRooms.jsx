@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../axiosConfig";
 import { io } from "socket.io-client";
-import dayjs from "dayjs"; 
+import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import calendar from "dayjs/plugin/calendar";
 import "dayjs/locale/fr";
@@ -33,23 +33,28 @@ export default function ChatRooms() {
   const socket = io("http://localhost:3000");
 
   useEffect(() => {
-    socket.on("receiveMessage", (newMessage) => {
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
-    });
-
-    return () => socket.off("receiveMessage");
-  }, []);
+    const messageHandler = (newMessage) => {
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, newMessage];
+        localStorage.setItem(`chatMessages_${currentRoom}`, JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
+    };
+  
+    socket.on("receiveMessage", messageHandler);
+  
+    return () => {
+      socket.off("receiveMessage", messageHandler); 
+    };
+  }, [currentRoom, socket]);
+  
 
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
         const response = await api.get(import.meta.env.VITE_API_BASE_URL + "/user/info");
         const { firstName, lastName } = response.data.user;
-        setUser((prevUser) => ({
-          ...prevUser,
-          firstName: firstName,
-          lastName: lastName,
-        }));
+        setUser((prevUser) => ({ ...prevUser, firstName, lastName }));
       } catch (error) {
         console.error("❌ Erreur lors de la récupération des infos utilisateur:", error);
       }
@@ -59,7 +64,8 @@ export default function ChatRooms() {
   }, []);
 
   useEffect(() => {
-    setMessages([]);
+    const storedMessages = localStorage.getItem(`chatMessages_${currentRoom}`);
+    setMessages(storedMessages ? JSON.parse(storedMessages) : []);
   }, [currentRoom]);
 
   const sendMessage = () => {
@@ -70,10 +76,21 @@ export default function ChatRooms() {
         message,
         room: currentRoom,
         file: file ? { name: file.name, url: URL.createObjectURL(file), type: file.type } : null,
-        timestamp: new Date().toISOString(), 
+        timestamp: new Date().toISOString(),
       };
 
       socket.emit("sendMessage", newMessage);
+
+      setMessages((prevMessages) => {
+        const isDuplicate = prevMessages.some((msg) => msg.timestamp === newMessage.timestamp);
+        if (isDuplicate) return prevMessages;
+      
+        const updatedMessages = [...prevMessages, newMessage];
+        localStorage.setItem(`chatMessages_${currentRoom}`, JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
+      
+
       setMessage("");
       setFile(null);
     }
@@ -115,13 +132,12 @@ export default function ChatRooms() {
                   <div className="flex items-center space-x-2">
                     <span className="font-semibold text-blue-600">{msg.username}</span>
                     <span className="text-xs text-gray-500">
-                    {dayjs(msg.timestamp).calendar(null, { 
+                      {dayjs(msg.timestamp).calendar(null, {
                         sameDay: "[Aujourd’hui à] HH:mm",
                         lastDay: "[Hier à] HH:mm",
                         lastWeek: "dddd [à] HH:mm",
                         sameElse: "DD/MM/YYYY [à] HH:mm",
                       })}
-
                     </span>
                   </div>
                   <span className="text-gray-700">{msg.message}</span>
