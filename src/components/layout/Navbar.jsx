@@ -29,6 +29,14 @@ function Navbar() {
                 Demande
               </a>
             </li>
+            <li>
+              <a
+                href="/chat"
+                className="transition duration-300 hover:text-pink-900"
+              >
+                Salons
+              </a>
+            </li>
             <li className="relative">
               <button
                 onClick={toggleDropdown}
