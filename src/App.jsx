@@ -6,6 +6,7 @@ import RegistrationForm from "./components/auth/Register";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import FormBesoin from "./components/FormBesoin";
 import Navbar from "./components/layout/Navbar";
+import ChatMiseEnRelation from "./components/chat/ChatMiseEnRelation";
 
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
             <Route element={<PrivateRoute />}>
               <Route path="/" element={<FormBesoin />} />
               <Route path="/chat" element={<ChatRooms />} />
+              <Route path="/messagerie" element={<ChatMiseEnRelation />} />
             </Route>
           </Routes>
         </AuthProvider>
