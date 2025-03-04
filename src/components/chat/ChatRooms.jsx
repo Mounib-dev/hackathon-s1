@@ -5,13 +5,15 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import calendar from "dayjs/plugin/calendar";
 import "dayjs/locale/fr";
 
+// Configuration des extensions de Day.js pour la gestion des dates
 dayjs.extend(relativeTime);
 dayjs.extend(calendar);
 dayjs.locale("fr");
 
-// import { socket } from "../../socketConfig";
+// Importation de socket.io-client pour gérer la communication en temps réel
 import { io } from "socket.io-client";
 
+// Définition des différentes salles de discussion disponibles
 const chatRooms = [
   { id: "general", name: "💬 Discussion Générale" },
   { id: "urgence", name: "🚨 Urgences" },
@@ -21,6 +23,7 @@ const chatRooms = [
 ];
 
 export default function ChatRooms() {
+    // Gestion de  la salle courante, des messages, du champ d'entrée et des fichiers
   const [currentRoom, setCurrentRoom] = useState("general");
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
@@ -32,12 +35,16 @@ export default function ChatRooms() {
       "https://cdn-www.konbini.com/files/2024/11/Chill-guy.jpg?width=3840&quality=75&format=webp",
   });
 
+
+  // Connexion au serveur WebSocket
   const socket = io("http://localhost:3000");
 
+ // Ecout des messages entrants en temps réel
   useEffect(() => {
     const messageHandler = (newMessage) => {
       setMessages((prevMessages) => {
         const updatedMessages = [...prevMessages, newMessage];
+        // Sauvegarde des messages dans le localStorage pour persistance
         localStorage.setItem(
           `chatMessages_${currentRoom}`,
           JSON.stringify(updatedMessages),
@@ -53,6 +60,7 @@ export default function ChatRooms() {
     };
   }, [currentRoom, socket]);
 
+  //Récupération des informations de l'utilisateur connecté
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
@@ -72,6 +80,7 @@ export default function ChatRooms() {
     fetchUserInfo();
   }, []);
 
+  //Chargement  des messages stockés dans le localStorage lors du changement de salle
   useEffect(() => {
     const storedMessages = localStorage.getItem(`chatMessages_${currentRoom}`);
     setMessages(storedMessages ? JSON.parse(storedMessages) : []);
@@ -89,7 +98,7 @@ export default function ChatRooms() {
           : null,
         timestamp: new Date().toISOString(),
       };
-
+       // Émission du message au serveur via WebSocket
       socket.emit("sendMessage", newMessage);
 
       setMessages((prevMessages) => {
@@ -106,6 +115,7 @@ export default function ChatRooms() {
         return updatedMessages;
       });
 
+      // Réinitialisation des champs après envoi
       setMessage("");
       setFile(null);
     }
@@ -113,6 +123,7 @@ export default function ChatRooms() {
 
   return (
     <div className="flex h-screen">
+       {/* Liste des salons de discussion */}
       <div className="w-1/4 bg-gray-900 p-4 text-white">
         <h2 className="mb-4 text-xl font-bold">💬 Salons de discussion</h2>
         <ul className="space-y-2">
@@ -129,7 +140,7 @@ export default function ChatRooms() {
           ))}
         </ul>
       </div>
-
+      {/* Zone principale du chat */}
       <div className="flex w-3/4 flex-col p-6">
         <h2 className="mb-4 text-2xl font-bold text-gray-800">
           {chatRooms.find((r) => r.id === currentRoom)?.name}
@@ -186,7 +197,7 @@ export default function ChatRooms() {
             </p>
           )}
         </div>
-
+    {/* Zone de saisie du message */}
         <div className="mt-4 flex space-x-2">
           <input
             type="text"
