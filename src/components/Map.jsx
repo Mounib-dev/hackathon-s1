@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import api from '../axiosConfig'; // Ton instance d'API
+import { useNavigate } from 'react-router-dom';
+
 
 // Assure-toi d'ajouter les styles de Leaflet
 import 'leaflet/dist/leaflet.css';
@@ -14,6 +16,8 @@ const Map = () => {
     const [locations, setLocations] = useState([]); // Tableau des coordonnées correspondantes
     const center = [48.8566, 2.3522]; // Centre de Paris par défaut
     const zoom = 12;
+    const navigate = useNavigate();
+
 
     // Fonction pour récupérer les alertes depuis le backend
     const fetchAlerts = async () => {
@@ -148,7 +152,7 @@ const Map = () => {
                             <p className="text-black-500">{alert.location}</p>
                             <button
                                 className="bg-pink-500 text-white flex justify-end px-4 py-2 rounded-lg hover:bg-pink-600"
-                                onClick={() => handleDiscussionClick(alert)}
+                                onClick={() => navigate(`/chat/${alert.id}`)}
                             >
                                 Discussion
                             </button>
