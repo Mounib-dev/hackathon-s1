@@ -7,7 +7,7 @@ import PrivateRoute from "./components/auth/PrivateRoute";
 import FormBesoin from "./components/FormBesoin";
 import Map from "./components/Map";
 import Navbar from "./components/layout/Navbar";
-import ChatMiseEnRelation from "./components/chat/ChatMiseEnRelation";
+import Chat from "./components/chat/Chat";
 
 function App() {
   return (
@@ -22,6 +22,7 @@ function App() {
             <Route element={<PrivateRoute />}>
 
               <Route path="/chat" element={<ChatRooms />} />
+              <Route path="/chat/:alertId" element={<Chat />} />
               <Route path="/" element={<Map />} />
               <Route path="/nouvelle-demande" element={<FormBesoin />} />
             </Route>
