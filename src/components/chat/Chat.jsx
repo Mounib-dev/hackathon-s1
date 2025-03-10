@@ -10,31 +10,25 @@ dayjs.extend(relativeTime);
 dayjs.locale("fr");
 
 const Chat = () => {
-  // Récupération de l'ID de l'alerte depuis l'URL
-  const { alertId } = useParams(); 
+  const { alertId } = useParams();
   const navigate = useNavigate();
-  
-  // États pour stocker les alertes, messages et informations utilisateur
+
   const [alert, setAlert] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [user, setUser] = useState({ firstName: "", lastName: "" });
   const [socket, setSocket] = useState(null);
-  
-  // Référence pour garder le scroll en bas des messages
-  const messagesEndRef = useRef(null); 
 
-  // Connexion au serveur socket lors du montage du composant
+  const messagesEndRef = useRef(null);
+
   useEffect(() => {
     const newSocket = io("http://localhost:3000");
     setSocket(newSocket);
-
     return () => {
       newSocket.disconnect();
     };
   }, []);
 
-  // Récupération des informations de l'utilisateur connecté
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
@@ -47,11 +41,9 @@ const Chat = () => {
         console.error("Erreur lors de la récupération des infos utilisateur:", error);
       }
     };
-
     fetchUserInfo();
   }, []);
 
-  // Rejoindre et quitter un salon de chat spécifique en fonction de l'alerte
   useEffect(() => {
     if (socket && alertId) {
       socket.emit("joinAlertRoom", alertId);
@@ -61,30 +53,26 @@ const Chat = () => {
     }
   }, [socket, alertId]);
 
-  // Récupération des détails de l'alerte
   useEffect(() => {
     const fetchAlertDetails = async () => {
       try {
         const response = await api.get(`${import.meta.env.VITE_API_BASE_URL}/alert/list`);
         if (Array.isArray(response.data.alerts)) {
-          const selectedAlert = response.data.alerts.find(alert => alert.id === parseInt(alertId));
+          const selectedAlert = response.data.alerts.find(a => a.id === parseInt(alertId));
           setAlert(selectedAlert || null);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des alertes:", error);
       }
     };
-
     if (alertId) fetchAlertDetails();
   }, [alertId]);
 
-  // Chargement des messages stockés en local
   useEffect(() => {
     const storedMessages = JSON.parse(localStorage.getItem(`chat_${alertId}`)) || [];
     setMessages(storedMessages);
   }, [alertId]);
 
-  // Écoute des nouveaux messages via WebSocket
   useEffect(() => {
     if (!socket) return;
 
@@ -93,27 +81,25 @@ const Chat = () => {
         setMessages((prev) => {
           const isDuplicate = prev.some(msg => msg.createdAt === newMsg.createdAt);
           if (isDuplicate) return prev;
-
-          const updatedMessages = [...prev, newMsg];
-          localStorage.setItem(`chat_${alertId}`, JSON.stringify(updatedMessages));
-          return updatedMessages;
+          const updated = [...prev, newMsg];
+          localStorage.setItem(`chat_${alertId}`, JSON.stringify(updated));
+          return updated;
         });
       }
     };
 
     socket.on("receiveMessage", messageHandler);
-
     return () => {
       socket.off("receiveMessage", messageHandler);
     };
   }, [socket, alertId]);
 
-  // Fonction pour envoyer un message
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
+    const senderName = `${user.firstName} ${user.lastName}`.trim() || "Anonyme";
 
     const newMsg = {
-      senderName: `${user.firstName} ${user.lastName}`.trim() || "Anonyme",
+      senderName,
       message: newMessage,
       createdAt: new Date().toISOString(),
       alertId
@@ -123,53 +109,105 @@ const Chat = () => {
     setNewMessage("");
   };
 
-  // Scroll automatique en bas des messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const getInitials = (fullName = "") => {
+    return fullName ? fullName.trim().charAt(0).toUpperCase() : "?";
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      {/* Barre supérieure avec le titre de l'alerte et le bouton retour */}
-      <div className="bg-pink-600 text-white p-4 flex items-center shadow-md">
-        <button onClick={() => navigate(-1)} className="mr-4 px-2 py-1 rounded-lg bg-white text-pink-600 hover:bg-gray-200">
+    <div className="flex flex-col min-h-screen bg-gray-100">
+    
+      <header className="bg-pink-600 text-white px-6 py-4 flex items-center shadow-md fixed top-0 left-0 w-full h-16">
+        <button
+          onClick={() => navigate(-1)}
+          className="mr-4 px-3 py-1 rounded-md bg-white text-pink-600 hover:bg-gray-200 transition-colors"
+        >
           ←
         </button>
         {alert ? (
           <div>
-            <h2 className="text-lg font-bold">{alert.title}</h2>
-            <p className="text-sm opacity-80">{alert.location}</p>
+            <h2 className="text-lg font-semibold">{alert.title}</h2>
+            <p className="text-sm text-pink-100">{alert.location}</p>
           </div>
         ) : (
           <p>Chargement...</p>
         )}
-      </div>
+      </header>
 
-      {/* Affichage des messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length > 0 ? (
-          messages.map((msg, index) => (
-            <div key={index} className={`p-3 rounded-lg max-w-xs shadow-md ${
-              msg.senderName === `${user.firstName} ${user.lastName}` ? "bg-pink-300 ml-auto text-white" : "bg-white"
-            }`}>
-              <p className="text-sm font-medium">{msg.senderName}</p>
-              <p className="text-black">{msg.message}</p>
-              <p className="text-xs text-gray-700 text-right">{dayjs(msg.createdAt).format("DD/MM/YYYY HH:mm")}</p>
-            </div>
-          ))
-        ) : (
-          <p className="text-center text-gray-400">Aucun message pour le moment.</p>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
 
-      {/* Champ de saisie du message */}
-      <div className="p-4 bg-white shadow-md flex">
-        <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Écrire un message..." className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none" />
-        <button onClick={handleSendMessage} className="px-4 py-3 bg-pink-600 text-white rounded-r-lg hover:bg-pink-700">
-          Envoyer
-        </button>
-      </div>
+      <main className="pt-16 flex-1 flex justify-center items-center p-4">
+        <div className="w-full max-w-4xl h-[80vh] flex flex-col bg-white shadow-lg rounded-xl overflow-hidden">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length > 0 ? (
+              messages.map((msg, index) => {
+                const isCurrentUser =
+                  msg.senderName === `${user.firstName} ${user.lastName}`;
+                return (
+                  <div key={index}>
+                    {isCurrentUser ? (
+                      <div className="flex items-end justify-end space-x-2">
+                        <div className="max-w-sm md:max-w-md lg:max-w-lg bg-pink-500 text-white px-4 py-2 rounded-2xl rounded-br-none shadow">
+                          <p className="text-sm font-semibold mb-1">
+                            {msg.senderName}
+                          </p>
+                          <p className="text-sm">{msg.message}</p>
+                          <p className="text-xs text-white/80 mt-1 text-right">
+                            {dayjs(msg.createdAt).format("DD/MM/YYYY HH:mm")}
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 flex-shrink-0 bg-pink-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          {getInitials(msg.senderName)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-end justify-start space-x-2">
+                        <div className="w-8 h-8 flex-shrink-0 bg-gray-400 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          {getInitials(msg.senderName)}
+                        </div>
+                        <div className="max-w-sm md:max-w-md lg:max-w-lg bg-gray-200 text-gray-800 px-4 py-2 rounded-2xl rounded-bl-none shadow">
+                          <p className="text-sm font-semibold mb-1">
+                            {msg.senderName}
+                          </p>
+                          <p className="text-sm">{msg.message}</p>
+                          <p className="text-xs text-gray-600 mt-1 text-right">
+                            {dayjs(msg.createdAt).format("DD/MM/YYYY HH:mm")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-center text-gray-400">
+                Aucun message pour le moment.
+              </p>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Champ de saisie */}
+          <div className="bg-gray-100 p-3 border-t border-gray-300 flex">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Écrire un message..."
+              className="flex-1 p-3 border border-gray-300 rounded-l-full focus:outline-none"
+            />
+            <button
+              onClick={handleSendMessage}
+              className="px-4 py-3 bg-pink-600 text-white rounded-r-full hover:bg-pink-700 transition-colors"
+            >
+              Envoyer
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
