@@ -13,12 +13,8 @@ export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(storedUnreadCount);
 
   useEffect(() => {
-    // const socket = io("http://localhost:3000"); // Ensure the URL matches your backend
-
     socket.on("new-alert", (data) => {
       console.log("New alert received:", data);
-      // setNotifications((prev) => [...prev, data.content]);
-      // setUnreadCount((prev) => prev + 1);
       setNotifications((prev) => {
         const updatedNotifications = [...prev, data.content];
         localStorage.setItem(
@@ -36,13 +32,9 @@ export const NotificationProvider = ({ children }) => {
     });
 
     return () => {
-      socket.off("new-alert"); // Correct cleanup (instead of disconnecting the socket)
+      socket.off("new-alert");
     };
   }, []);
-  // const addNotification = (message) => {
-  //   setNotifications((prev) => [...prev, message.content]);
-  //   setUnreadCount((prev) => prev + 1);
-  // };
 
   const markAllAsRead = () => {
     setUnreadCount(0);
