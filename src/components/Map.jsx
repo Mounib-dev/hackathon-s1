@@ -9,7 +9,7 @@ import markerIconYellow from '../assets/marker_yellow.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import '../Map.css';
 import { useNavigate } from 'react-router-dom';
-
+import { CircleX } from 'lucide-react';
 
 const icons = {
     critique: L.divIcon({
@@ -32,7 +32,7 @@ const icons = {
     }),
 };
 
-api.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
+
 
 const Map = () => {
     const [alerts, setAlerts] = useState([]);
@@ -40,12 +40,12 @@ const Map = () => {
     const [filteredAlerts, setFilteredAlerts] = useState([]);
     const [priorityFilter, setPriorityFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedAlert, setSelectedAlert] = useState(null); // Gère l'affichage du popup de conseils
     const alertsPerPage = 3;
+    const navigate = useNavigate();
 
     const center = [48.8566, 2.3522];
     const zoom = 12;
-    const navigate = useNavigate();
-
 
     const fetchAlerts = async () => {
         try {
@@ -150,11 +150,15 @@ const Map = () => {
                 {currentAlerts.map((alert, index) => (
                     <div key={index} className={`p-5 rounded-lg shadow-md ${priorityColors[alert.priorityLevel] || 'bg-gray-200'}`}>
                         <h4 className="text-xl font-semibold">{alert.title}</h4>
-                        <p className="text-black-500">{alert.location}</p><br></br>
-                        <button className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600"  onClick={() => navigate(`/chat/${alert.id}`)}
-                        >
-                            Discussion
-                        </button>
+                        <p className="text-black-500">{alert.location}</p><br />
+                        <div className="flex space-x-2">
+                            <button className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600" onClick={() => navigate(`/chat/${alert.id}`)}>
+                                Discussion
+                            </button>
+                            <button className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600" onClick={() => setSelectedAlert(alert)}>
+                                Conseils
+                            </button>
+                        </div>
                     </div>
                 ))}
                 <div className="flex justify-center space-x-2">
@@ -169,6 +173,21 @@ const Map = () => {
                     ))}
                 </div>
             </div>
+            {selectedAlert && (
+                <div className="fixed inset-y-0 right-0 w-1/3 bg-white p-6 rounded-l-lg shadow-lg border-l border-gray-300 flex flex-col">
+                    <h3 className="text-xl font-semibold mb-4">Conseils pour {selectedAlert.title}</h3>
+
+                    <button
+                        className="absolute top-4 right-4 cursor-pointer text-white rounded-full w-8 h-8 flex items-center justify-center"
+                        onClick={() => setSelectedAlert(null)}
+                    >
+                        < CircleX className='text-red-600' />
+                    </button>
+                    <p>Voici quelques conseils pour gérer cette alerte...</p>
+
+                </div>
+            )}
+
         </div>
     );
 };
