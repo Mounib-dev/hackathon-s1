@@ -8,6 +8,8 @@ import markerIconOrange from '../assets/marker_orange.png';
 import markerIconYellow from '../assets/marker_yellow.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import '../Map.css';
+import { useNavigate } from 'react-router-dom';
+
 
 const icons = {
     critique: L.divIcon({
@@ -42,6 +44,8 @@ const Map = () => {
 
     const center = [48.8566, 2.3522];
     const zoom = 12;
+    const navigate = useNavigate();
+
 
     const fetchAlerts = async () => {
         try {
@@ -147,7 +151,8 @@ const Map = () => {
                     <div key={index} className={`p-5 rounded-lg shadow-md ${priorityColors[alert.priorityLevel] || 'bg-gray-200'}`}>
                         <h4 className="text-xl font-semibold">{alert.title}</h4>
                         <p className="text-black-500">{alert.location}</p><br></br>
-                        <button className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600">
+                        <button className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600"  onClick={() => navigate(`/chat/${alert.id}`)}
+                        >
                             Discussion
                         </button>
                     </div>
