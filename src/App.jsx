@@ -9,6 +9,7 @@ import Map from "./components/Map";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 // import ChatMiseEnRelation from "./components/chat/ChatMiseEnRelation";
+import Chat from "./components/chat/Chat";
 
 import ChatBot from "./components/chat/ChatBot";
 
@@ -25,6 +26,7 @@ function App() {
                 <Route path="/register" element={<RegistrationForm />} />
                 <Route element={<PrivateRoute />}>
                   <Route path="/chat" element={<ChatRooms />} />
+                  <Route path="/chat/:alertId" element={<Chat />} />
                   <Route path="/" element={<Map />} />
                   <Route path="/nouvelle-demande" element={<FormBesoin />} />
                   <Route path="/ai-assistant" element={<ChatBot />} />
