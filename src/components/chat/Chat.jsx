@@ -196,6 +196,11 @@ const Chat = () => {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSendMessage();
+                }
+              }}
               placeholder="Écrire un message..."
               className="flex-1 p-3 border border-gray-300 rounded-l-full focus:outline-none"
             />
