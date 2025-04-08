@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 export const socket = io("http://localhost:3000", {
-  transports: ["websocket"], // Ensures only WebSockets are used
+  transports: ["websocket", "polling"], // Ensures only WebSockets are used
   reconnectionAttempts: 5, // Number of retries
 });
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import api from "../axiosConfig";
 import "leaflet/dist/leaflet.css";
@@ -43,6 +43,7 @@ const Map = () => {
   const navigate = useNavigate();
 
   const center = [48.8566, 2.3522];
+  // eslint-disable-next-line no-unused-vars
   const [mapCenter, setMapCenter] = useState(center);
 
   const zoom = 12;
@@ -132,6 +133,7 @@ const Map = () => {
     if (alerts.length > 0) {
       processAlerts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alerts]);
 
   useEffect(() => {
