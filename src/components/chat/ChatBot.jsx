@@ -11,6 +11,7 @@ function ChatBot() {
 
   const { token } = useAuth();
 
+  // AJOUTER UN DISABLE DU BOUTON PENDANT LE CHARGEMENT DE L'HISTORIQUE
   useEffect(() => {
     setLoadingHistory(true);
     fetch("http://localhost:3000/api/v1/chatbot/history", {
@@ -151,7 +152,7 @@ function ChatBot() {
           <button
             type="submit"
             className="ml-2 rounded-md bg-pink-700 px-4 py-3 text-white transition hover:bg-pink-800"
-            disabled={loading}
+            disabled={loading || loadingHistory}
           >
             {loading ? "Thinking..." : "Send"}
           </button>
