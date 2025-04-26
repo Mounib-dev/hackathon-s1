@@ -15,8 +15,14 @@ const Login = () => {
     try {
       await login({ email, password });
     } catch (error) {
-      setError("Échec de la connexion. Vérifiez vos identifiants.");
-      console.error("Login failed:", error);
+      console.log(error.response.data);
+      console.log(error.response.data.message);
+      console.log(error.response.status);
+      if (error.response.status === 403) {
+        setError(`${error.response.data.message}`);
+      } else {
+        setError("Échec de la connexion. Vérifiez vos identifiants.");
+      }
     }
   };
 
