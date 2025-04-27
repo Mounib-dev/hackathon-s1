@@ -12,6 +12,8 @@ import Footer from "./components/layout/Footer";
 import Chat from "./components/chat/Chat";
 
 import ChatBot from "./components/chat/ChatBot";
+import Volontaires from "./components/Volontaires";
+
 
 function App() {
   return (
@@ -30,6 +32,10 @@ function App() {
                   <Route path="/" element={<Map />} />
                   <Route path="/nouvelle-demande" element={<FormBesoin />} />
                   <Route path="/ai-assistant" element={<ChatBot />} />
+                  <Route path="/volontaires" element={<Volontaires />} />
+                 
+
+                  
                 </Route>
               </Routes>
             </main>
