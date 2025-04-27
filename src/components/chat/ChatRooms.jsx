@@ -12,28 +12,40 @@ dayjs.locale("fr");
 
 // Importation de socket.io-client pour gérer la communication en temps réel
 import { io } from "socket.io-client";
+import CreateChatRoom from "./CreateChatRoom";
 
 // Définition des différentes salles de discussion disponibles
-const chatRooms = [
-  { id: "general", name: "💬 Discussion Générale" },
-  { id: "urgence", name: "🚨 Urgences" },
-  { id: "entraide", name: "🤝 Entraide Locale" },
-  { id: "paris", name: "📍 Paris" },
-  { id: "lyon", name: "📍 Lyon" },
-];
+// const chatRooms = [
+//   { id: "general", name: "💬 Discussion Générale" },
+//   { id: "urgence", name: "🚨 Urgences" },
+//   { id: "entraide", name: "🤝 Entraide Locale" },
+//   { id: "paris", name: "📍 Paris" },
+//   { id: "lyon", name: "📍 Lyon" },
+// ];
 
 export default function ChatRooms() {
   // Gestion de la salle courante, des messages, du champ d'entrée et des fichiers
-  const [currentRoom, setCurrentRoom] = useState("general");
+  const [currentRoom, setCurrentRoom] = useState("");
+  const [cannotSendMessages, setCannotSendMessages] = useState(true);
+
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState(null);
   const [user, setUser] = useState({
     firstName: "",
     lastName: "",
+    id: null,
     avatar:
       "https://cdn-www.konbini.com/files/2024/11/Chill-guy.jpg?width=3840&quality=75&format=webp",
   });
+
+  // Chat Rooms
+  const [chatRooms, setChatRooms] = useState([]);
+
+  const addChatRoom = (newRoom) => {
+    console.log("New Room: ", newRoom);
+    setChatRooms([...chatRooms, newRoom]);
+  };
 
   // État pour gérer l'image zoomée (affichée en grand)
   const [zoomImage, setZoomImage] = useState(null);
@@ -41,35 +53,39 @@ export default function ChatRooms() {
   // Connexion au serveur WebSocket
   const socket = io("http://localhost:3000");
 
-  // Se connecter à la salle WebSocket actuelle
-  useEffect(() => {
-    socket.emit("joinRoom", currentRoom);
-  }, [currentRoom]);
-
   // Écoute des messages entrants en temps réel, avec filtrage par salle et dédoublonnage
   useEffect(() => {
-    const messageHandler = (newMessage) => {
-      // Filtres uniquement les messages destinés à la salle courante
-      if (newMessage.room !== currentRoom) return;
-      setMessages((prevMessages) => {
-        // Vérifier si le message existe déjà dans la liste ( via son timestamp)
-        if (prevMessages.some((msg) => msg.timestamp === newMessage.timestamp)) {
-          return prevMessages;
-        }
-        const updatedMessages = [...prevMessages, newMessage];
-        // Sauvegarde des messages dans le localStorage pour persistance
-        localStorage.setItem(
-          `chatMessages_${currentRoom}`,
-          JSON.stringify(updatedMessages)
-        );
-        return updatedMessages;
-      });
-    };
+    // const messageHandler = (newMessage) => {
+    //   console.log(newMessage);
+    //   // Filtres uniquement les messages destinés à la salle courante
+    //   // if (newMessage.room !== currentRoom) return;
+    //   setMessages((prevMessages) => {
+    //     // Vérifier si le message existe déjà dans la liste ( via son timestamp)
+    //     if (
+    //       prevMessages.some((msg) => msg.timestamp === newMessage.timestamp)
+    //     ) {
+    //       return prevMessages;
+    //     }
+    //     const updatedMessages = [...prevMessages, newMessage];
+    //     // Sauvegarde des messages dans le localStorage pour persistance
+    //     localStorage.setItem(
+    //       `chatMessages_${newMessage.room}`,
+    //       JSON.stringify(updatedMessages),
+    //     );
+    //     return updatedMessages;
+    //   });
+    // };
 
-    socket.on("receiveMessage", messageHandler);
+    if (currentRoom !== "") {
+      socket.emit("joinRoom", currentRoom);
+
+      socket.on("receiveMessage", (newMessage) => {
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      });
+    }
 
     return () => {
-      socket.off("receiveMessage", messageHandler);
+      socket.off("receiveMessage");
     };
   }, [currentRoom]);
 
@@ -78,14 +94,14 @@ export default function ChatRooms() {
     const fetchUserInfo = async () => {
       try {
         const response = await api.get(
-          import.meta.env.VITE_API_BASE_URL + "/user/info"
+          import.meta.env.VITE_API_BASE_URL + "/user/info",
         );
-        const { firstName, lastName } = response.data.user;
-        setUser((prevUser) => ({ ...prevUser, firstName, lastName }));
+        const { firstName, lastName, id } = response.data.user;
+        setUser((prevUser) => ({ ...prevUser, firstName, lastName, id }));
       } catch (error) {
         console.error(
           "❌ Erreur lors de la récupération des infos utilisateur:",
-          error
+          error,
         );
       }
     };
@@ -93,55 +109,120 @@ export default function ChatRooms() {
     fetchUserInfo();
   }, []);
 
-  // Chargement des messages stockés dans le localStorage lors du changement de salle
+  // ADD "ENTRAIN D'ÉCRIRE for other users while someone is writing"
+  // MAKE SURE TO RETRIEVE ONLY SOME DATA OF USER NOT HIS PASSWORD AND SO ON...
   useEffect(() => {
-    const storedMessages = localStorage.getItem(`chatMessages_${currentRoom}`);
-    setMessages(storedMessages ? JSON.parse(storedMessages) : []);
+    const fetchMessages = async () => {
+      try {
+        console.log("Current Room: ", currentRoom);
+        const response = await api.get(
+          import.meta.env.VITE_API_BASE_URL +
+            `/chatroom/messages/${currentRoom}`,
+        );
+        console.log(response.status);
+        console.log(response.data);
+        setMessages(response.data);
+      } catch (error) {
+        console.error("❌ Error fetching messages:", error);
+      }
+    };
+
+    if (currentRoom !== "") {
+      fetchMessages();
+    }
   }, [currentRoom]);
 
-  // Fonction d'envoi d'un message (texte ou fichier)
-  const sendMessage = () => {
+  // Retrieve chat rooms from Database
+  useEffect(() => {
+    const fetchChatRooms = async () => {
+      const chatRoomsEndpoint = "/chatroom/list";
+      const response = await api.get(
+        import.meta.env.VITE_API_BASE_URL + chatRoomsEndpoint,
+      );
+      console.log(response.status);
+      console.log(response.data);
+      if (response.status === 200 && response.data.length > 0) {
+        console.log(response.data);
+        setChatRooms([...response.data]);
+      }
+    };
+
+    fetchChatRooms();
+  }, []);
+
+  const sendMessage = async () => {
     if (message.trim() || file) {
       const newMessage = {
-        username: `${user.firstName} ${user.lastName}`.trim() || "Anonyme",
-        avatar: user.avatar,
-        message,
-        room: currentRoom,
-        
-        // Ici, on utilise URL.createObjectURL(file) qui ne fonctionne que localement.
-        file: file
-          ? { name: file.name, url: URL.createObjectURL(file), type: file.type }
-          : null,
-        timestamp: new Date().toISOString(),
+        text: message,
+        fileUrl: file ? URL.createObjectURL(file) : null,
+        userId: user.id,
+        roomId: currentRoom,
       };
 
-      // Émission du message au serveur via WebSocket
-      socket.emit("sendMessage", newMessage);
-
-      setMessages((prevMessages) => {
-        // Vérifie s'il y a déjà un message avec ce timestamp
-        if (prevMessages.some((msg) => msg.timestamp === newMessage.timestamp)) {
-          return prevMessages;
-        }
-        const updatedMessages = [...prevMessages, newMessage];
-        localStorage.setItem(
-          `chatMessages_${currentRoom}`,
-          JSON.stringify(updatedMessages)
+      try {
+        const response = await api.post(
+          import.meta.env.VITE_API_BASE_URL + "/chatroom/messages/",
+          newMessage,
         );
-        return updatedMessages;
-      });
+        socket.emit("sendMessage", response.data);
+      } catch (error) {
+        console.error("❌ Error sending message:", error);
+      }
 
-      // Réinitialisation des champs après envoi
       setMessage("");
       setFile(null);
     }
   };
+
+  // LEGACY v v v v v (BELOW)
+  // Fonction d'envoi d'un message (texte ou fichier)
+  // const sendMessage = () => {
+  //   if (message.trim() || file) {
+  //     const newMessage = {
+  //       username: `${user.firstName} ${user.lastName}`.trim() || "Anonyme",
+  //       avatar: user.avatar,
+  //       message,
+  //       room: currentRoom,
+
+  //       // Ici, on utilise URL.createObjectURL(file) qui ne fonctionne que localement.
+  //       file: file
+  //         ? { name: file.name, url: URL.createObjectURL(file), type: file.type }
+  //         : null,
+  //       timestamp: new Date().toISOString(),
+  //     };
+
+  //     // Émission du message au serveur via WebSocket
+  //     socket.emit("sendMessage", newMessage);
+
+  //     setMessages((prevMessages) => {
+  //       // Vérifie s'il y a déjà un message avec ce timestamp
+  //       if (
+  //         prevMessages.some((msg) => msg.timestamp === newMessage.timestamp)
+  //       ) {
+  //         return prevMessages;
+  //       }
+  //       const updatedMessages = [...prevMessages, newMessage];
+  //       localStorage.setItem(
+  //         `chatMessages_${currentRoom}`,
+  //         JSON.stringify(updatedMessages),
+  //       );
+  //       return updatedMessages;
+  //     });
+
+  //     // Réinitialisation des champs après envoi
+  //     setMessage("");
+  //     setFile(null);
+  //   }
+  // };
 
   return (
     <div className="flex h-screen">
       {/* Liste des salons de discussion */}
       <div className="w-1/4 bg-gray-900 p-4 text-white">
         <h2 className="mb-4 text-xl font-bold">💬 Salons de discussion</h2>
+        <div className="mt-6">
+          <CreateChatRoom onAddChatRoom={addChatRoom} />
+        </div>
         <ul className="space-y-2">
           {chatRooms.map((room) => (
             <li
@@ -149,9 +230,13 @@ export default function ChatRooms() {
               className={`cursor-pointer rounded-lg p-3 transition ${
                 currentRoom === room.id ? "bg-pink-600" : "hover:bg-gray-700"
               }`}
-              onClick={() => setCurrentRoom(room.id)}
+              onClick={() => {
+                setCurrentRoom(room.id);
+                setCannotSendMessages(false);
+              }}
             >
-              {room.name}
+              {room.icon}
+              <span className="ml-3">{room.name}</span>
             </li>
           ))}
         </ul>
@@ -168,18 +253,18 @@ export default function ChatRooms() {
           {messages.length > 0 ? (
             messages.map((msg, index) => (
               <div key={index} className="mb-3 flex space-x-3">
-                <img
+                {/* <img
                   src={msg.avatar}
                   alt="Avatar"
                   className="h-10 w-10 rounded-full border shadow"
-                />
+                /> */}
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="font-semibold text-blue-600">
-                      {msg.username}
+                      {msg.user.firstName} {msg.user.lastName}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {dayjs(msg.timestamp).calendar(null, {
+                      {dayjs(msg.createdAt).calendar(null, {
                         sameDay: "[Aujourd’hui à] HH:mm",
                         lastDay: "[Hier à] HH:mm",
                         lastWeek: "dddd [à] HH:mm",
@@ -187,7 +272,7 @@ export default function ChatRooms() {
                       })}
                     </span>
                   </div>
-                  <span className="text-gray-700">{msg.message}</span>
+                  <span className="text-gray-700">{msg.text}</span>
 
                   {/* Si c'est un fichier image, on l'affiche en miniature et on peut zoomer */}
                   {msg.file && msg.file.type.startsWith("image/") && (
@@ -195,7 +280,7 @@ export default function ChatRooms() {
                       <img
                         src={msg.file.url}
                         alt="shared"
-                        className="h-32 w-32 rounded-lg object-cover shadow cursor-pointer"
+                        className="h-32 w-32 cursor-pointer rounded-lg object-cover shadow"
                         // Au clic, on affiche l'image en grand dans une modale
                         onClick={() => setZoomImage(msg.file.url)}
                       />
@@ -219,7 +304,9 @@ export default function ChatRooms() {
             ))
           ) : (
             <p className="text-center text-gray-500">
-              Aucun message pour l’instant...
+              {cannotSendMessages
+                ? "Sélectionnez un salon pour commencer à discuter."
+                : "Aucun message pour l’instant..."}
             </p>
           )}
         </div>
@@ -247,8 +334,9 @@ export default function ChatRooms() {
             📎
           </label>
           <button
-            className="rounded-lg bg-pink-600 px-6 py-3 text-white"
+            className={`rounded-lg px-6 py-3 text-white transition-colors ${cannotSendMessages ? "cursor-not-allowed bg-gray-400" : "bg-pink-600 hover:bg-pink-700"}`}
             onClick={sendMessage}
+            disabled={cannotSendMessages}
           >
             Envoyer
           </button>
@@ -257,9 +345,12 @@ export default function ChatRooms() {
 
       {/* Modale pour zoomer sur l'image au premier plan */}
       {zoomImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+        <div className="bg-opacity-70 fixed inset-0 z-50 flex items-center justify-center bg-black">
           {/* On clique en dehors de l'image pour fermer */}
-          <div className="absolute inset-0" onClick={() => setZoomImage(null)} />
+          <div
+            className="absolute inset-0"
+            onClick={() => setZoomImage(null)}
+          />
           <div className="relative">
             <img
               src={zoomImage}
@@ -268,7 +359,7 @@ export default function ChatRooms() {
             />
             {/* Bouton de fermeture en haut à droite de l'image */}
             <button
-              className="absolute top-2 right-2 text-white bg-gray-800 px-3 py-1 rounded"
+              className="absolute top-2 right-2 rounded bg-gray-800 px-3 py-1 text-white"
               onClick={() => setZoomImage(null)}
             >
               X

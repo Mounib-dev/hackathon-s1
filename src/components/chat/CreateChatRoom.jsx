@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, CircleX } from "lucide-react";
 import api from "../../axiosConfig";
+import PropTypes from "prop-types";
 
 const icons = ["💬", "🚨", "🤝", "📍"]; // Available icons
 
@@ -22,7 +23,7 @@ const CreateChatRoom = ({ onAddChatRoom }) => {
     console.log(response);
     if (response.status === 201) {
       onAddChatRoom({
-        id: name.toLowerCase().replace(/\s+/g, "-"),
+        id: response.data.chatRoomId,
         name: `${icon} ${name}`,
       });
 
@@ -90,6 +91,9 @@ const CreateChatRoom = ({ onAddChatRoom }) => {
       )}
     </>
   );
+};
+CreateChatRoom.propTypes = {
+  onAddChatRoom: PropTypes.func.isRequired,
 };
 
 export default CreateChatRoom;

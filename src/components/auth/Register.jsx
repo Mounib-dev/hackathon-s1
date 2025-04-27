@@ -9,6 +9,8 @@ function RegistrationForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [successMessage, setSuccessMessage] = useState("");
+
   const registerEndpoint = "/user/register";
 
   const handleSubmit = async (e) => {
@@ -28,7 +30,7 @@ function RegistrationForm() {
       if (
         response.status === 201 &&
         response.data.message ===
-          "Inscription réussie, vous pouvez à présent vous connecter"
+          "Inscription réussie, vous allez recevoir un email de validation sur l'adresse indiquée"
       ) {
         setFirstName("");
         setLastName("");
@@ -36,6 +38,7 @@ function RegistrationForm() {
         setPhoneNumber("");
         setEmail("");
         setPassword("");
+        setSuccessMessage(response.data.message);
       }
     } catch (error) {
       console.error("Registration failed:", error);
@@ -118,12 +121,19 @@ function RegistrationForm() {
               required
             />
           </div>
+
+          {successMessage && (
+            <p className="mt-4 text-sm font-semibold text-green-600">
+              {successMessage}
+            </p>
+          )}
+
           <div className="mt-8 flex items-center justify-between">
             <button
               className="focus:shadow-outline rounded-md bg-pink-700 px-5 py-3 text-lg font-semibold text-white hover:bg-pink-500 focus:outline-none"
               type="submit"
             >
-              S'inscrire
+              S&apos;inscrire
             </button>
             <a
               className="inline-block align-baseline text-sm font-bold text-pink-500 hover:text-pink-800"
