@@ -40,6 +40,15 @@ function Navbar() {
               </li>
               <li>
                 <a
+                  href="/volontaires"
+                  className="transition duration-300 hover:text-pink-900"
+                >
+                  Volontaires
+                </a>
+              </li>
+             
+              <li>
+                <a
                   href="/chat"
                   className="transition duration-300 hover:text-pink-900"
                 >
