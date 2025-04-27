@@ -321,18 +321,7 @@ export default function ChatRooms() {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
-          <input
-            type="file"
-            className="hidden"
-            id="fileInput"
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-          <label
-            htmlFor="fileInput"
-            className="cursor-pointer rounded-lg bg-gray-300 px-4 py-3 text-gray-700"
-          >
-            📎
-          </label>
+
           <button
             className={`rounded-lg px-6 py-3 text-white transition-colors ${cannotSendMessages ? "cursor-not-allowed bg-gray-400" : "bg-pink-600 hover:bg-pink-700"}`}
             onClick={sendMessage}
