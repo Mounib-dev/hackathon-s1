@@ -12,6 +12,9 @@ const AuthProvider = ({ children }) => {
     () => localStorage.getItem("token") || null,
   );
   const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState(
+    () => localStorage.getItem("userId") || null,
+  );
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -94,6 +97,10 @@ const AuthProvider = ({ children }) => {
         setIsLoggedIn(true);
 
         setUser(response.data.user);
+        const decoded = jwtDecode(response.data.token);
+        const userId = decoded.id;
+        localStorage.setItem("userId", userId);
+        setUserId(userId);
         navigate("/");
       } else {
         throw new Error(response.data.message || "Login failed");
@@ -123,6 +130,7 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
+    setUserId(null);
     setIsLoggedIn(false);
     navigate("/login");
   };
@@ -134,6 +142,7 @@ const AuthProvider = ({ children }) => {
   const value = {
     token,
     user,
+    userId,
     isLoggedIn,
     login,
     logout,
