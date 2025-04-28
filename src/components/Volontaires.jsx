@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../axiosConfig";
 import { FaStar } from "react-icons/fa";
+import Swal from "sweetalert2";
+
 
 function Volontaires() {
   const [userId, setUserId] = useState(() =>
@@ -9,16 +11,31 @@ function Volontaires() {
   );
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
-  const [ratings, setRatings] = useState({});
-  const [ratedUsers, setRatedUsers] = useState(new Set()); // Pour suivre les volontaires déjà notés
 
+  // Initialisation des notations et des utilisateurs déjà notés depuis localStorage
+  const [ratings, setRatings] = useState(() => {
+    const storedRatings = localStorage.getItem("ratings");
+    return storedRatings ? JSON.parse(storedRatings) : {};
+  });
+
+  const [ratedUsers, setRatedUsers] = useState(() => {
+    const storedRatedUsers = localStorage.getItem("ratedUsers");
+    return storedRatedUsers ? new Set(JSON.parse(storedRatedUsers)) : new Set();
+  });
+
+  // Synchronisation des notations et des utilisateurs notés avec localStorage
+  useEffect(() => {
+    localStorage.setItem("ratings", JSON.stringify(ratings));
+    localStorage.setItem("ratedUsers", JSON.stringify(Array.from(ratedUsers)));
+  }, [ratings, ratedUsers]);
+
+  // Récupération de la liste des utilisateurs
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const response = await api.get(
           import.meta.env.VITE_API_BASE_URL + "/user/list"
         );
-        // Filtrer les utilisateurs pour exclure l'utilisateur connecté
         const filteredUsers = response.data.filter((u) => u.id !== userId);
         setUsers(filteredUsers);
       } catch (error) {
@@ -28,31 +45,34 @@ function Volontaires() {
     fetchUsers();
   }, [user]);
 
-  const handleRating = async (userId, rating) => {
-    // Vérifier si l'utilisateur a déjà noté ce volontaire
-    if (ratedUsers.has(userId)) {
-      alert("Vous avez déjà noté ce volontaire.");
+  const handleRating = async (volunteerId, rating) => {
+    if (ratedUsers.has(volunteerId)) {
+      Swal.fire({
+        title: '<span style="color: #ef4444;"> Déjà noté </span>',
+        text: 'Vous avez déjà noté ce volontaire !',
+        width: '350px',
+        confirmButtonColor: '#ef4444',
+        showConfirmButton: true,
+      });
+      
+      
       return;
     }
 
-   
     setRatings((prev) => ({
       ...prev,
-      [userId]: rating,
+      [volunteerId]: rating,
     }));
 
     try {
-      const rate = await api.post(
+      await api.post(
         import.meta.env.VITE_API_BASE_URL + "/note/create",
         {
-          user_id: userId,
+          user_id: volunteerId,
           rating: rating,
         }
       );
-      console.log(rate);
-      
-      // Ajouter ce volontaire à la liste des volontaires notés
-      setRatedUsers((prev) => new Set(prev).add(userId));
+      setRatedUsers((prev) => new Set(prev).add(volunteerId));
     } catch (error) {
       console.error("Erreur lors de l'envoi de la note", error);
     }
