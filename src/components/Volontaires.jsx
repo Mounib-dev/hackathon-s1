@@ -2,32 +2,80 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../axiosConfig";
 import { FaStar } from "react-icons/fa";
+import Swal from "sweetalert2";
+
 
 function Volontaires() {
+  const [userId, setUserId] = useState(() =>
+    Number(localStorage.getItem("userId"))
+  );
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
-  const [ratings, setRatings] = useState({});
 
+  // Initialisation des notations et des utilisateurs déjà notés depuis localStorage
+  const [ratings, setRatings] = useState(() => {
+    const storedRatings = localStorage.getItem("ratings");
+    return storedRatings ? JSON.parse(storedRatings) : {};
+  });
+
+  const [ratedUsers, setRatedUsers] = useState(() => {
+    const storedRatedUsers = localStorage.getItem("ratedUsers");
+    return storedRatedUsers ? new Set(JSON.parse(storedRatedUsers)) : new Set();
+  });
+
+  // Synchronisation des notations et des utilisateurs notés avec localStorage
   useEffect(() => {
-   
+    localStorage.setItem("ratings", JSON.stringify(ratings));
+    localStorage.setItem("ratedUsers", JSON.stringify(Array.from(ratedUsers)));
+  }, [ratings, ratedUsers]);
+
+  // Récupération de la liste des utilisateurs
+  useEffect(() => {
     const fetchUsers = async () => {
-        const response = await api.get(import.meta.env.VITE_API_BASE_URL + "/user/list"); 
-        setUsers(response.data);
-          
-              
-  
+      try {
+        const response = await api.get(
+          import.meta.env.VITE_API_BASE_URL + "/user/list"
+        );
+        const filteredUsers = response.data.filter((u) => u.id !== userId);
+        setUsers(filteredUsers);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des utilisateurs", error);
+      }
     };
-   
     fetchUsers();
   }, [user]);
 
+  const handleRating = async (volunteerId, rating) => {
+    if (ratedUsers.has(volunteerId)) {
+      Swal.fire({
+        title: '<span style="color: #ef4444;"> Déjà noté </span>',
+        text: 'Vous avez déjà noté ce volontaire !',
+        width: '350px',
+        confirmButtonColor: '#ef4444',
+        showConfirmButton: true,
+      });
+      
+      
+      return;
+    }
 
-
-  const handleRating = (userId, rating) => {
     setRatings((prev) => ({
       ...prev,
-      [userId]: rating,
+      [volunteerId]: rating,
     }));
+
+    try {
+      await api.post(
+        import.meta.env.VITE_API_BASE_URL + "/note/create",
+        {
+          user_id: volunteerId,
+          rating: rating,
+        }
+      );
+      setRatedUsers((prev) => new Set(prev).add(volunteerId));
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de la note", error);
+    }
   };
 
   return (
@@ -49,7 +97,6 @@ function Volontaires() {
                   <h4 className="text-2xl font-semibold text-gray-800">
                     {u.firstName} {u.lastName}
                   </h4>
-                 
                 </div>
               </div>
               <div className="mt-4">
@@ -69,7 +116,8 @@ function Volontaires() {
                 </div>
                 {ratings[u.id] && (
                   <p className="text-sm text-gray-500 mt-2">
-                    Note attribuée : {ratings[u.id]} étoile{ratings[u.id] > 1 ? "s" : ""}
+                    Note attribuée : {ratings[u.id]} étoile
+                    {ratings[u.id] > 1 ? "s" : ""}
                   </p>
                 )}
               </div>
