@@ -26,7 +26,6 @@ function ChatBot() {
       .then((data) => {
         console.log(data.length);
         if (data.length > 0) {
-          console.log("salut");
           setMessages(data[0].messages);
         }
       })
