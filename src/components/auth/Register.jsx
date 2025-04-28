@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { Loader } from "lucide-react";
 
 function RegistrationForm() {
   const [firstName, setFirstName] = useState("");
@@ -11,10 +12,14 @@ function RegistrationForm() {
 
   const [successMessage, setSuccessMessage] = useState("");
 
+  const [registring, setRegistring] = useState(false);
+
   const registerEndpoint = "/user/register";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSuccessMessage("");
+    setRegistring(true);
     try {
       const response = await axios.post(
         import.meta.env.VITE_API_BASE_URL + registerEndpoint,
@@ -38,6 +43,7 @@ function RegistrationForm() {
         setPhoneNumber("");
         setEmail("");
         setPassword("");
+        setRegistring(false);
         setSuccessMessage(response.data.message);
       }
     } catch (error) {
@@ -126,6 +132,10 @@ function RegistrationForm() {
             <p className="mt-4 text-sm font-semibold text-green-600">
               {successMessage}
             </p>
+          )}
+
+          {registring && (
+            <Loader className="mt-3 ml-3 h-6 w-6 animate-spin text-pink-500" />
           )}
 
           <div className="mt-8 flex items-center justify-between">
